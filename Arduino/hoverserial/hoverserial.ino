@@ -68,6 +68,8 @@ typedef struct {
   int16_t cmd2;
   int16_t speedR_meas;
   int16_t speedL_meas;
+  int16_t wheelR_cnt;
+  int16_t wheelL_cnt;
   int16_t batVoltage;
   int16_t boardTemp;
   uint16_t cmdLed;
@@ -151,6 +153,64 @@ void Receive() {
       Serial.print(Feedback.speedR_meas);
       Serial.print(" 4: ");
       Serial.print(Feedback.speedL_meas);
+      Serial.print(" 5: ");
+      Serial.print(Feedback.batVoltage);
+      Serial.print(" 6: ");
+      Serial.print(Feedback.boardTemp);
+      Serial.print(" 7: ");
+      Serial.println(Feedback.cmdLed);
+    } else {
+      Serial.println("Non-valid data skipped");
+    }
+    idx = 0; // Reset the index (it prevents to enter in this if condition in
+             // the next cycle)
+  }
+
+// If DEBUG_RX is defined print all incoming bytes
+#ifdef DEBUG_RX
+  Serial.print(incomingByte);
+  return;
+#endif
+
+  // Copy received data
+  if (bufStartFrame == START_FRAME) { // Initialize if new data is detected
+    p = (byte *)&NewFeedback;
+    *p++ = incomingBytePrev;
+    *p++ = incomingByte;
+    idx = 2;
+  } else if (idx >= 2 &&
+             idx < sizeof(SerialFeedback)) { // Save the new received data
+    *p++ = incomingByte;
+    idx++;
+  }
+
+  // Check if we reached the end of the package
+  if (idx == sizeof(SerialFeedback)) {
+    uint16_t checksum;
+    checksum = (uint16_t)(NewFeedback.start ^ NewFeedback.cmd1 ^
+                          NewFeedback.cmd2 ^ NewFeedback.speedR_meas ^
+                          NewFeedback.speedL_meas ^ NewFeedback.wheelR_cnt ^
+                          NewFeedback.wheelL_cnt ^ NewFeedback.batVoltage ^
+                          NewFeedback.boardTemp ^ NewFeedback.cmdLed);
+
+    // Check validity of the new data
+    if (NewFeedback.start == START_FRAME && checksum == NewFeedback.checksum) {
+      // Copy the new data
+      memcpy(&Feedback, &NewFeedback, sizeof(SerialFeedback));
+
+      // Print data to built-in Serial
+      Serial.print("1: ");
+      Serial.print(Feedback.cmd1);
+      Serial.print(" 2: ");
+      Serial.print(Feedback.cmd2);
+      Serial.print(" 3: ");
+      Serial.print(Feedback.speedR_meas);
+      Serial.print(" 4: ");
+      Serial.print(Feedback.speedL_meas);
+      Serial.print(" r: ");
+      Serial.print(Feedback.wheelR_cnt);
+      Serial.print(" l: ");
+      Serial.print(Feedback.wheelL_cnt);
       Serial.print(" 5: ");
       Serial.print(Feedback.batVoltage);
       Serial.print(" 6: ");
