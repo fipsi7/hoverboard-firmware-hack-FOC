@@ -87,11 +87,15 @@ int16_t odom_r = 0;
 static uint16_t wp_l_vorher = 0;
 static uint16_t wp_r_vorher = 0;
 
+int16_t modulo(int16_t m, int16_t rest_classes){
+  return (((m % rest_classes) + rest_classes) %rest_classes);
+}
+
 int16_t up_or_down(int16_t vorher, int16_t nachher){
   uint16_t up_down[6] = {0,-1,-2,0,2,1};
-  uint16_t mod_diff =  (((vorher - nachher) % 6) + 6) % 6;
+  //uint16_t mod_diff =  (((vorher - nachher) % 6) + 6) % 6;
   
-  return up_down[mod_diff];
+  return up_down[modulo(vorher-nachher, 6)];
 }
 
 // =================================
@@ -215,8 +219,8 @@ void DMA1_Channel1_IRQHandler(void) {
     uint8_t encoding = (uint8_t)((hall_ul<<2) + (hall_vl<<1) + hall_wl);
     int wheel_pos = rtConstP.vec_hallToPos_Value[encoding];
   
-    odom_l = odom_l + up_or_down(wp_l_vorher, wheel_pos);
-    wp_l_vorher = wheel_pos;
+  odom_l = modulo(odom_l + up_or_down(wp_l_vorher, wheel_pos), 9000);
+  wp_l_vorher = wheel_pos;
   
     /* Apply commands */
     LEFT_TIM->LEFT_TIM_U    = (uint16_t)CLAMP(ul + pwm_res / 2, pwm_margin, pwm_res-pwm_margin);
@@ -259,8 +263,8 @@ void DMA1_Channel1_IRQHandler(void) {
     encoding = (uint8_t)((hall_ur<<2) + (hall_vr<<1) + hall_wr);
     wheel_pos = rtConstP.vec_hallToPos_Value[encoding];
   
-    odom_r = odom_r - up_or_down(wp_r_vorher, wheel_pos);
-    wp_r_vorher = wheel_pos;
+  odom_r = modulo(odom_r - up_or_down(wp_r_vorher, wheel_pos), 9000);
+  wp_r_vorher = wheel_pos;
 
     /* Apply commands */
     RIGHT_TIM->RIGHT_TIM_U  = (uint16_t)CLAMP(ur + pwm_res / 2, pwm_margin, pwm_res-pwm_margin);
