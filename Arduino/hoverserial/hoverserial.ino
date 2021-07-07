@@ -244,8 +244,7 @@ void loop(void) {
   if (iTimeSend > timeNow)
     return;
   iTimeSend = timeNow + TIME_SEND;
-  int power = (SPEED_MAX_TEST - 2 * abs(iTest));
-  Send(0, power);
+  Send(0, SPEED_MAX_TEST - 2 * abs(iTest));
 
   // Calculate test command signal
   iTest += iStep;
